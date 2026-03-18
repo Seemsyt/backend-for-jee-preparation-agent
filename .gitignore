@@ -73,9 +73,3 @@ out/
 *.db
 chatbot.db-shm
 chatbot.db-wal
-faiss_index/
-FAISS_index/
-faiss_index/*
-FAISS_index/*
-faiss_index
-FAISS_index

@@ -31,10 +31,10 @@ load_dotenv()
 # -----------------------------
 # 1. LOAD BOOKS
 # -----------------------------
-INDEX_PATH = '../FAISS_index'
+INDEX_PATH = './FAISS_index'
 book_paths = [
-    '/Books/Aurélien-Géron-Hands-On-Machine-Learning-with-Scikit-Learn-Keras-and-Tensorflow_-Concepts-Tools-and-Techniques-to-Build-Intelligent-Systems-O’Reilly-Media-2019.pdf',
-    '/Books/mml-book.pdf'
+    './Books/Aurélien-Géron-Hands-On-Machine-Learning-with-Scikit-Learn-Keras-and-Tensorflow_-Concepts-Tools-and-Techniques-to-Build-Intelligent-Systems-O’Reilly-Media-2019.pdf',
+    './Books/mml-book.pdf'
 ]
 
 def clean_text(text:str):

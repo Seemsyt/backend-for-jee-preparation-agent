@@ -11,7 +11,7 @@ from graph import workflow, checkpointer
 
 app = FastAPI()
 
-# CORS
+# COR
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

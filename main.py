@@ -11,13 +11,14 @@ from graph import workflow, checkpointer
 
 app = FastAPI()
 
-# COR
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Thread-Id"],
 )
 
 class ChatRequest(BaseModel):
@@ -87,11 +88,13 @@ def stream_chat(message: str, thread_id: str):
         ):
             if isinstance(chunk,AIMessage):
                 yield chunk.content
+        return thread_id
 
 @app.post("/chat-stream")
 def chat_stream(request: ChatRequest):
     thread_id = request.thread_id or str(uuid.uuid4())
     headers = {"X-Thread-Id": thread_id}
+    print(headers)
 
     return StreamingResponse(
         stream_chat(request.message, thread_id),

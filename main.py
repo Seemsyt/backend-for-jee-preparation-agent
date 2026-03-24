@@ -1,3 +1,5 @@
+import os
+from langgraph.checkpoint.postgres import PostgresSaver
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -75,14 +77,16 @@ def all_threads():
 # stream chat response
 def stream_chat(message: str, thread_id: str):
     config = {"configurable": {"thread_id": thread_id}}
-    
-    for chunk, metadata in workflow.stream(
-        {"messages": [HumanMessage(content=message)]},
-        config=config,
-        stream_mode="messages",
-    ):
-        if isinstance(chunk,AIMessage):
-            yield chunk.content
+    DB_URL=os.getenv('URL')
+    with PostgresSaver.from_conn_string(DB_URL) as checkpointer:
+        checkpointer.setup()
+        for chunk, metadata in workflow.stream(
+            {"messages": [HumanMessage(content=message)]},
+            config=config,
+            stream_mode="messages",
+        ):
+            if isinstance(chunk,AIMessage):
+                yield chunk.content
 
 @app.post("/chat-stream")
 def chat_stream(request: ChatRequest):

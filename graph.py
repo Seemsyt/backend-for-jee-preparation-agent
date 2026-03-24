@@ -2,13 +2,13 @@ import time
 from langgraph.graph import StateGraph, START, END
 from typing import TypedDict, Annotated
 from langchain_core.messages import (
+    AIMessage,
     BaseMessage,
     HumanMessage,
     SystemMessage,
 )
-import sqlite3
-from langchain_openai import ChatOpenAI,OpenAIEmbeddings
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.postgres import PostgresSaver
+from langchain_openai import ChatOpenAI
 from langgraph.graph.message import add_messages
 from langchain_tavily import TavilySearch
 from langgraph.prebuilt import tools_condition, ToolNode
@@ -33,8 +33,8 @@ load_dotenv()
 # -----------------------------
 INDEX_PATH = '../FAISS_index'
 book_paths = [
-    './Books/Aurélien-Géron-Hands-On-Machine-Learning-with-Scikit-Learn-Keras-and-Tensorflow_-Concepts-Tools-and-Techniques-to-Build-Intelligent-Systems-O’Reilly-Media-2019.pdf',
-    './Books/mml-book.pdf'
+    '/Books/Aurélien-Géron-Hands-On-Machine-Learning-with-Scikit-Learn-Keras-and-Tensorflow_-Concepts-Tools-and-Techniques-to-Build-Intelligent-Systems-O’Reilly-Media-2019.pdf',
+    '/Books/mml-book.pdf'
 ]
 
 def clean_text(text:str):
@@ -177,16 +177,16 @@ class ChatState(TypedDict):
 
     
 
-@tool
-def Rag(query: str, book: str = None):
-    """RAG tool for ML & Math books"""
-    retriever = get_retreiver(book)
-    results = retriever.invoke(query)
+# @tool
+# def Rag(query: str, book: str = None):
+#     """RAG tool for ML & Math books"""
+#     retriever = get_retreiver(book)
+#     results = retriever.invoke(query)
 
-    return "\n\n".join(
-    f"Source: {doc.metadata.get('book')}\n{doc.page_content}"
-    for doc in results
-)
+#     return "\n\n".join(
+#     f"Source: {doc.metadata.get('book')}\n{doc.page_content}"
+#     for doc in results
+# )
 
 search_tool = TavilySearch(
     max_results=5,
@@ -218,7 +218,7 @@ def coding_agent(prompt: str) -> str:
     return response.content
 
 
-tools = [search_tool, coding_agent,Rag]
+tools = [coding_agent,search_tool]
 
 
 # -----------------------------
@@ -226,7 +226,7 @@ tools = [search_tool, coding_agent,Rag]
 # -----------------------------
 
 llm = ChatOpenAI(
-    model="openrouter/hunter-alpha",
+    model="arcee-ai/trinity-large-preview:free",
     temperature=0.7,
     streaming=True,
     base_url="https://openrouter.ai/api/v1",
@@ -276,43 +276,30 @@ tool_node = ToolNode(tools)
 # -----------------------------
 # SQLite Memory
 # -----------------------------
+DB_URL = os.getenv("URL")
+checkpointer_gen = PostgresSaver.from_conn_string(DB_URL)
+checkpointer = checkpointer_gen.__enter__()
 
-conn = sqlite3.connect(
-    database="chatbot.db",
-    check_same_thread=False
-)
-
-checkpointer = SqliteSaver(conn=conn)
-
-
-# -----------------------------
-# Graph
-# -----------------------------
 
 graph = StateGraph(ChatState)
 
 graph.add_node("chat_node", chat_node)
 graph.add_node("tools", tool_node)
 
-
 graph.add_edge(START, "chat_node")
-
 
 graph.add_conditional_edges(
     "chat_node",
     tools_condition
 )
 
-
 graph.add_edge("tools", "chat_node")
 
+workflow = graph.compile(checkpointer=checkpointer)
 
-# -----------------------------
-# Compile Graph
-# -----------------------------
 
-workflow = graph.compile(
-    checkpointer=checkpointer
-)
+
+
+
 
 

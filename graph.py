@@ -276,7 +276,7 @@ tools = [coding_agent,search_tool,Rag]
 # -----------------------------
 
 llm = ChatOpenAI(
-    model="arcee-ai/trinity-large-preview:free",
+    model="stepfun/step-3.5-flash:free",
     temperature=0.7,
     streaming=True,
     base_url="https://openrouter.ai/api/v1",
